@@ -1,0 +1,144 @@
+---
+title: "World Development Indicators Analysis (2022)"
+author: "Tiffany Yang"
+date: "2025-10-07"
+format:
+  html:
+    toc: true
+    toc-title: "Table of Contents"
+    theme: cosmo
+    code-fold: true
+  pdf:
+    documentclass: article
+    geometry: margin=1in
+    toc: true
+execute:
+  echo: true
+  warning: false
+  message: false
+
+bibliography: references.bib
+
+---
+
+```{python}
+#| echo: false
+
+# pip install pandas
+# pip install wbgapi
+
+# Import the libraries
+import pandas as pd
+import wbgapi as wb
+import matplotlib.pyplot as plt
+
+# Define the indicators to download
+indicators = {
+    'gdp_per_capita': 'NY.GDP.PCAP.CD',
+    'gdp_growth_rate': 'NY.GDP.MKTP.KD.ZG',
+    'inflation_rate': 'FP.CPI.TOTL.ZG',
+    'unemployment_rate': 'SL.UEM.TOTL.ZS',
+    'total_population': 'SP.POP.TOTL',
+    'life_expectancy': 'SP.DYN.LE00.IN',
+    'adult_literacy_rate': 'SE.ADT.LITR.ZS',
+    'income_inequality': 'SI.POV.GINI',
+    'health_expenditure_gdp_share': 'SH.XPD.CHEX.GD.ZS',
+    'measles_immunisation_rate': 'SH.IMM.MEAS',
+    'education_expenditure_gdp_share': 'SE.XPD.TOTL.GD.ZS',
+    'primary_school_enrolment_rate': 'SE.PRM.ENRR',
+    'exports_gdp_share': 'NE.EXP.GNFS.ZS'
+}
+
+# Get the list of country codes for the "World" region
+country_codes = wb.region.members('WLD')
+
+# Download data for countries only in 2022
+df = wb.data.DataFrame(indicators.values(), economy=country_codes, time=2022, skipBlanks=True, labels=True).reset_index()
+
+# Delete the 'economy' column
+df = df.drop(columns=['economy'], errors='ignore')
+
+# Create a reversed dictionary mapping indicator codes to names
+# Rename the columns and convert all names to lowercase
+df.rename(columns=lambda x: {v: k for k, v in indicators.items()}.get(x, x).lower(), inplace=True)
+
+# Sort 'country' in ascending order
+df = df.sort_values('country', ascending=True)
+
+# Reset the index after sorting
+df = df.reset_index(drop=True)
+
+# Display the number of rows and columns
+print(df.shape)
+
+# Display the first few rows of the data
+print(df.head(3))
+
+# Save the data to a CSV file
+df.to_csv('wdi.csv', index=False)
+```
+
+## Exploratory Data Analysis 
+- In this section, we explore three key indicators from the World Development Indicators dataset for 2022: GDP per capita, life expectancy, and inflation rate. We will summarize their distributions and examine patterns across countries.
+
+```{python}
+
+# Select the indicators
+eda_indicators = ['gdp_per_capita', 'life_expectancy', 'inflation_rate']
+
+# Summary statistics
+df[eda_indicators].describe()
+```
+
+### Summary of Findings 
+**GDP per capita:** There is a wide variation across countries, with some countries having very high GDP per capita while others remain below $1,000.  
+**Life expectancy:** Most countries have life expectancy between 60 and 80 years, with few outliers below 50 years.  
+**Inflation rate:** Inflation rates vary considerably, with some countries experiencing negative growth and others exceeding 10%.
+
+
+```{python}
+
+#| echo: false
+#| fig-cap: "Distribution of GDP per capita across countries in 2022. Source: World Development Indicators (World Bank, 2022)."
+#| label: fig:gdp_hist
+
+plt.figure(figsize=(8,5))
+plt.hist(df['gdp_per_capita'].dropna(), bins=20, color='skyblue', edgecolor='black')
+plt.xlabel('GDP per Capita (USD)')
+plt.ylabel('Number of Countries')
+plt.show()
+```
+
+```{python}
+#| echo: false
+#| fig-cap: "Relationship between GDP per capita and life expectancy across countries in 2022. Source: World Development Indicators (World Bank, 2022)."
+#| label: fig:gdp_life
+
+plt.figure(figsize=(8,5))
+plt.scatter(df['gdp_per_capita'], df['life_expectancy'], color='green', alpha=0.6)
+plt.xlabel('GDP per Capita (USD)')
+plt.ylabel('Life Expectancy (Years)')
+plt.show()
+```
+
+```{python}
+
+#| echo: false
+#| label: tbl:summary
+
+# Select indicators
+indicators = ['gdp_per_capita', 'life_expectancy', 'inflation_rate']
+
+# Create summary statistics
+summary_table = df[indicators].agg(['mean', 'min', 'max', 'std']).round(2)
+
+# Rename rows for readability
+summary_table.index = ['Mean', 'Minimum', 'Maximum', 'Standard Deviation']
+
+summary_table
+```
+
+As shown in Figure @fig:gdp_hist, the distribution of GDP per capita varies widely across countries.  
+Figure @fig:gdp_life highlights a positive correlation between GDP per capita and life expectancy.  
+Key summary statistics are provided in Table @tbl:summary.
+

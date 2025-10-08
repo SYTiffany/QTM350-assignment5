@@ -1,0 +1,93 @@
+---
+title: "World Development Indicators Analysis"
+author: "Tiffany Yang"
+date: "2025-10-07"
+format:
+  revealjs:
+    theme: solarized
+    slide-number: true
+    transition: fade
+bibliography: references.bib
+---
+
+# World Development Indicators Analysis
+## Tiffany Yang
+### 2025-10-07
+
+---
+
+# Introduction
+
+- Analysis of the World Development Indicators dataset (2022)  
+- Focus indicators: GDP per capita, Life Expectancy, Inflation Rate  
+- Goal: Explore distributions, relationships, and key statistics across countries  
+
+---
+
+# Load Data
+
+```{python}
+#| echo: false
+import pandas as pd
+import wbgapi as wb
+import matplotlib.pyplot as plt
+
+# Define indicators
+indicators = {
+    'gdp_per_capita': 'NY.GDP.PCAP.CD',
+    'life_expectancy': 'SP.DYN.LE00.IN',
+    'inflation_rate': 'FP.CPI.TOTL.ZG'
+}
+
+# Download data
+country_codes = wb.region.members('WLD')
+df = wb.data.DataFrame(indicators.values(), economy=country_codes, time=2022, skipBlanks=True, labels=True).reset_index()
+df = df.drop(columns=['economy'], errors='ignore')
+df.rename(columns=lambda x: {v: k for k, v in indicators.items()}.get(x, x).lower(), inplace=True)
+df = df.sort_values('country').reset_index(drop=True)
+```
+
+---
+```{python}
+
+#| echo: false
+summary_table = df[['gdp_per_capita','life_expectancy','inflation_rate']].agg(['mean','min','max','std']).round(2)
+summary_table.index = ['Mean','Minimum','Maximum','Standard Deviation']
+summary_table
+```
+
+---
+```{python}
+
+#| echo: false
+#| fig-cap: "Distribution of GDP per capita across countries in 2022. Source: World Development Indicators (World Bank, 2022)."
+#| label: fig:gdp_hist
+
+plt.figure(figsize=(7,3))
+plt.hist(df['gdp_per_capita'].dropna(), bins=20, color='skyblue', edgecolor='black')
+plt.xlabel('GDP per Capita (USD)')
+plt.ylabel('Number of Countries')
+plt.show()
+```
+
+---
+```{python}
+#| echo: false
+#| fig-cap: "Relationship between GDP per capita and life expectancy across countries in 2022. Source: World Development Indicators (World Bank, 2022)."
+#| label: fig:gdp_life
+
+plt.figure(figsize=(7,3))
+plt.scatter(df['gdp_per_capita'], df['life_expectancy'], color='green', alpha=0.6)
+plt.xlabel('GDP per Capita (USD)')
+plt.ylabel('Life Expectancy (Years)')
+plt.show()
+```
+
+---
+# Conclusion
+
+- Wealthier countries generally have higher life expectancy
+- GDP per capita distribution is skewed, with some countries below $1,000 and others above $50,000
+- Inflation rate extremes suggest economic instability in some countries
+- Data highlights global inequalities and development differences
+
